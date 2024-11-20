@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: amlight-sc24-demo
+  namespace: amlight
+  labels:
+    app: amlight-sc24-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: amlight-sc24-demo
+  template:
+    metadata:
+      name: amlight-sc24-demo
+      labels:
+        app: amlight-sc24-demo
+      annotations:
+        k8s.v1.cni.cncf.io/networks: '[
+            { "name": "multus3888" }
+        ]'
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - k8s-gen4-01.ampath.net
+      tolerations:
+      - effect: NoSchedule
+        key: nautilus.io/ceph
+        operator: Exists
+      - effect: PreferNoSchedule
+        key: vidia.com/gpu
+        operator: Exists        
+      containers:
+      - name: amlight-sc24-demo
+        image: gitlab-registry.nrp-nautilus.io/prp/perfsonar/testpoint
+        resources:
+          limits:
+            memory: 1Gi
+            cpu: 16m
+          requests:
+            memory: 1Gi
+            cpu: 16m
+        args: ["sh", "-c", "sleep infinity"]
+        securityContext:
+          capabilities:
+            add: ["NET_ADMIN"]
