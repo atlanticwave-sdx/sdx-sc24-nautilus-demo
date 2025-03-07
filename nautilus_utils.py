@@ -204,5 +204,5 @@ def run_command(name, cmd):
             print("Pod/Deployment not found")
             return False
         KNOWN_PODS[name] = resp.items[0].metadata.name
-    resp = stream(v1.connect_get_namespaced_pod_exec, KNOWN_PODS[name], NAMESPACE, command=cmd, stderr=True, stdin=False, stdout=True, tty=False)
+    resp = stream(v1.connect_get_namespaced_pod_exec, KNOWN_PODS[name], NAMESPACE, command=cmd.split(), stderr=True, stdin=False, stdout=True, tty=False)
     return resp
