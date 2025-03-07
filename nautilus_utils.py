@@ -15,7 +15,17 @@ NAMESPACE = "amlight"
 
 KNOWN_PODS = {}
 
-def remove_vlan(vlan):
+def reload_config():
+    global k8s_client, app_v1, v1, k8s_client
+
+    config.load_kube_config(config_file=os.getenv("KUBECONFIG", "~/.kube/config-nautilus"))
+    k8s_client = client.ApiClient()
+    app_v1 = client.AppsV1Api()
+    v1 = client.CoreV1Api()
+    k8s_custom = client.CustomObjectsApi(k8s_client)
+    
+
+def delete_vlan(vlan):
     try:
         resp = k8s_custom.delete_namespaced_custom_object(group="k8s.cni.cncf.io", version="v1", namespace=NAMESPACE, plural="network-attachment-definitions", name=f"multus{vlan}")
     except client.exceptions.ApiException as exc:
@@ -24,13 +34,13 @@ def remove_vlan(vlan):
     # TODO: wait to remove?
     return True
 
-def setup_vlan(iface, vlan):
+def create_vlan(iface, vlan):
     try:
         resp = k8s_custom.get_namespaced_custom_object(group="k8s.cni.cncf.io", version="v1", namespace=NAMESPACE, plural="network-attachment-definitions", name=f"multus{vlan}")
     except client.exceptions.ApiException:
         pass
     else:
-        if not remove_vlan(vlan):
+        if not delete_vlan(vlan):
             return False
 
     net_dict = {
@@ -68,7 +78,7 @@ def setup_vlan(iface, vlan):
 
     return True
 
-def remove_deployment(name):
+def delete_deployment(name):
     app_v1.delete_namespaced_deployment(name=name, namespace=NAMESPACE)
     for _ in range(60):
         resp = v1.list_namespaced_pod(namespace=NAMESPACE, label_selector=f"app={name}")
@@ -92,11 +102,11 @@ def create_deployment(
     except client.exceptions.ApiException:
         pass
     else:
-        if not remove_deployment(name):
+        if not delete_deployment(name):
             return False
 
     if node_iface and vlan:
-        setup_vlan(node_iface, vlan)
+        create_vlan(node_iface, vlan)
 
     deploy_dict = {
         'apiVersion': 'apps/v1',
