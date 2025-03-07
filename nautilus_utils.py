@@ -4,7 +4,7 @@ import time
 from kubernetes import client, config, utils
 from kubernetes.stream import stream
 
-config.load_kube_config(config_file=os.getenv("KUBECONFIG", "~/.kube/config-nautilus"))
+config.load_kube_config(config_file=os.getenv("KUBECONFIG", "~/work/fabric_config/kubeconfig-nautilus"))
 
 k8s_client = client.ApiClient()
 app_v1 = client.AppsV1Api()
